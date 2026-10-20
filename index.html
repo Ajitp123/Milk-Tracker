@@ -1,0 +1,899 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#0d9488">
+  <meta name="description" content="Daily Milk Tracker by Ajeet Parmar">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Milk Tracker">
+  
+  
+  
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/svg+xml" href="icons/icon.svg">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <title>Milk Tracker | by Ajeet Parmar</title>
+  <style>
+:root {
+  --primary: #0d9488; --primary-dark: #0f766e; --primary-light: #ccfbf1;
+  --bg: #f0fdfa; --card: #fff; --text: #134e4a; --danger: #ef4444;
+  --border: #99f6e4; --shadow: 0 4px 12px rgba(13,148,136,.15); --radius: 16px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); line-height: 1.5; overscroll-behavior-x: none; }
+#app { max-width: 480px; margin: 0 auto; min-height: 100%; display: flex; flex-direction: column; padding-bottom: env(safe-area-inset-bottom); }
+.header { background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: #fff; padding: 1rem 1.25rem; padding-top: max(1rem, env(safe-area-inset-top)); position: sticky; top: 0; z-index: 100; box-shadow: var(--shadow); }
+.header-content { display: flex; justify-content: space-between; align-items: center; }
+.logo { font-size: 1.25rem; font-weight: 700; }
+.icon-btn { background: rgba(255,255,255,.2); border: none; color: #fff; width: 40px; height: 40px; border-radius: 50%; font-size: 1.15rem; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.icon-btn:active { background: rgba(255,255,255,.35); }
+.nav { display: flex; background: var(--card); border-bottom: 1px solid var(--border); position: sticky; top: 60px; z-index: 90; }
+.nav-btn { flex: 1; padding: .85rem .4rem; border: none; background: none; font-size: .88rem; font-weight: 600; color: #64748b; cursor: pointer; border-bottom: 3px solid transparent; white-space: nowrap; }
+.nav-btn.active { color: var(--primary); border-bottom-color: var(--primary); background: var(--primary-light); }
+.main { flex: 1; padding: 1rem; padding-bottom: 2.5rem; touch-action: pan-y; }
+.page { display: none; animation: fadeIn .25s ease; }
+.page.active { display: block; }
+@keyframes fadeIn { from { opacity: 0; transform: translateX(12px); } to { opacity: 1; transform: none; } }
+.card { background: var(--card); border-radius: var(--radius); padding: 1.25rem; margin-bottom: 1rem; box-shadow: var(--shadow); border: 1px solid var(--border); }
+.card h2 { font-size: 1.1rem; margin-bottom: 1rem; color: var(--primary-dark); }
+.card h3 { font-size: 1rem; margin-bottom: .75rem; color: var(--primary-dark); }
+.form-group { margin-bottom: 1rem; }
+.form-group label { display: block; font-size: .85rem; font-weight: 600; margin-bottom: .4rem; color: #475569; }
+input[type="number"], input[type="text"], input[type="date"], select {
+  width: 100%; padding: .75rem 1rem; border: 2px solid var(--border); border-radius: 12px; font-size: 1rem; background: #f8fafc; color: var(--text);
+}
+input:focus, select:focus { outline: none; border-color: var(--primary); background: #fff; }
+input:disabled, input[readonly] { background: #e2e8f0; color: #64748b; cursor: not-allowed; }
+.type-selector { display: flex; gap: .5rem; flex-wrap: wrap; }
+.type-btn { flex: 1; min-width: 90px; padding: .7rem .4rem; border: 2px solid var(--border); border-radius: 12px; background: #f8fafc; font-size: .88rem; font-weight: 600; cursor: pointer; }
+.type-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+.type-btn[data-type="none"].active { background: #64748b; border-color: #64748b; }
+.total-preview { text-align: center; font-size: 1.35rem; font-weight: 700; color: var(--primary-dark); margin: 1rem 0; padding: .75rem; background: var(--primary-light); border-radius: 12px; }
+.btn { display: block; width: 100%; padding: .9rem 1.25rem; border: none; border-radius: 12px; font-size: 1rem; font-weight: 700; cursor: pointer; margin-top: .5rem; }
+.btn-primary { background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: #fff; box-shadow: 0 4px 12px rgba(13,148,136,.35); }
+.btn-primary:active { transform: scale(.98); }
+.btn-secondary { background: #e2e8f0; color: #334155; }
+.btn-danger { background: #fee2e2; color: var(--danger); margin-top: .75rem; }
+.btn-sm { display: inline-block; width: auto; padding: .4rem .75rem; font-size: .8rem; margin: 0 .25rem 0 0; border-radius: 8px; }
+.month-nav, .year-nav, .history-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; gap: .5rem; }
+.month-nav span, .year-nav span { font-weight: 700; font-size: 1.05rem; color: var(--primary-dark); min-width: 130px; text-align: center; }
+.history-list, .day-entries { display: flex; flex-direction: column; gap: .6rem; }
+.history-item, .entry-item { display: flex; justify-content: space-between; align-items: center; padding: .85rem 1rem; background: #f8fafc; border-radius: 12px; border: 1px solid var(--border); }
+.history-item .left, .entry-item .left { display: flex; flex-direction: column; gap: .15rem; }
+.history-item .date, .entry-item .type-label { font-weight: 700; font-size: .95rem; }
+.history-item .meta, .entry-item .meta { font-size: .8rem; color: #64748b; }
+.history-item .right, .entry-item .right { text-align: right; }
+.history-item .amount, .entry-item .amount { font-weight: 700; color: var(--primary-dark); }
+.entry-actions { display: flex; gap: .35rem; margin-top: .35rem; }
+.empty-state { text-align: center; padding: 1.5rem 1rem; color: #94a3b8; font-size: .95rem; }
+.stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; margin-bottom: 1rem; }
+.stat-box { background: var(--primary-light); border-radius: 12px; padding: 1rem; text-align: center; }
+.stat-box .label { font-size: .75rem; color: #0f766e; font-weight: 600; margin-bottom: .25rem; }
+.stat-box .value { font-size: 1.2rem; font-weight: 800; color: var(--primary-dark); }
+.stat-box.full { grid-column: 1 / -1; }
+.yearly-months { display: flex; flex-direction: column; gap: .5rem; margin-top: .5rem; }
+.year-month-row { display: flex; justify-content: space-between; padding: .6rem .8rem; background: #f8fafc; border-radius: 10px; font-size: .9rem; }
+.year-month-row .name { font-weight: 600; }
+.modal { position: fixed; inset: 0; background: rgba(0,0,0,.45); display: flex; align-items: flex-end; justify-content: center; z-index: 200; padding: 1rem; padding-bottom: max(1rem, env(safe-area-inset-bottom)); }
+.modal.hidden { display: none; }
+.modal-content { background: #fff; border-radius: 20px 20px 16px 16px; padding: 1.5rem; width: 100%; max-width: 420px; max-height: 85vh; overflow-y: auto; animation: slideUp .3s ease; }
+@keyframes slideUp { from { transform: translateY(40px); opacity: 0; } to { transform: none; opacity: 1; } }
+.modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; }
+.modal-header h2 { font-size: 1.2rem; color: var(--primary-dark); }
+.toast { position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%); background: #134e4a; color: #fff; padding: .85rem 1.5rem; border-radius: 50px; font-weight: 600; font-size: .95rem; z-index: 300; box-shadow: 0 8px 24px rgba(0,0,0,.25); animation: toastIn .3s ease; max-width: 90%; text-align: center; }
+.toast.hidden { display: none; }
+@keyframes toastIn { from { opacity: 0; transform: translateX(-50%) translateY(20px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
+.hint { font-size: .85rem; color: #64748b; margin-bottom: 1rem; line-height: 1.4; }
+hr { border: none; border-top: 1px solid var(--border); margin: 1.5rem 0; }
+.footer-credit { text-align: center; font-size: .75rem; color: #94a3b8; padding: .75rem; margin-top: auto; }
+.day-total { background: var(--primary-light); border-radius: 12px; padding: .75rem 1rem; margin-top: .75rem; font-weight: 700; text-align: center; color: var(--primary-dark); }
+.hidden { display: none !important; }
+.toggle-row { display: flex; justify-content: space-between; align-items: center; padding: .5rem 0; }
+.toggle-row label { margin: 0; }
+.switch { position: relative; width: 48px; height: 28px; }
+.switch input { opacity: 0; width: 0; height: 0; }
+.slider { position: absolute; cursor: pointer; inset: 0; background: #cbd5e1; border-radius: 28px; transition: .2s; }
+.slider:before { position: absolute; content: ""; height: 22px; width: 22px; left: 3px; bottom: 3px; background: #fff; border-radius: 50%; transition: .2s; }
+.switch input:checked + .slider { background: var(--primary); }
+.switch input:checked + .slider:before { transform: translateX(20px); }
+@media print {
+  body * { visibility: hidden !important; }
+  #print-area, #print-area * { visibility: visible !important; }
+  #print-area { position: absolute; left: 0; top: 0; width: 100%; padding: 0; margin: 0; font-family: system-ui, sans-serif; }
+  .print-page { page-break-after: always; padding: 18mm 15mm 22mm 15mm; position: relative; min-height: 260mm; box-sizing: border-box; }
+  .print-page:last-child { page-break-after: auto; }
+  .print-header { text-align: center; border-bottom: 2px solid #0d9488; padding-bottom: 8px; margin-bottom: 14px; }
+  .print-header h1 { color: #0d9488; font-size: 20px; margin: 0 0 4px 0; }
+  .print-header .sub { font-size: 14px; color: #334155; }
+  .print-stats { display: flex; justify-content: space-around; flex-wrap: wrap; gap: 8px; margin: 12px 0 16px; font-size: 12px; }
+  .print-stats div { text-align: center; }
+  table.print-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+  table.print-table th, table.print-table td { border: 1px solid #99f6e4; padding: 6px 5px; text-align: left; }
+  table.print-table th { background: #ccfbf1; }
+  .print-footer { position: absolute; bottom: 10mm; left: 15mm; right: 15mm; display: flex; justify-content: space-between; font-size: 10px; color: #64748b; border-top: 1px solid #e2e8f0; padding-top: 6px; }
+  .print-footer .page-num { text-align: right; }
+}
+.print-only { display: none; }
+@media print { .print-only { display: block !important; } }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <header class="header">
+      <div class="header-content">
+        <h1 class="logo">🥛 Milk Tracker</h1>
+        <button id="settings-btn" class="icon-btn" aria-label="Settings">⚙️</button>
+      </div>
+    </header>
+    <nav class="nav">
+      <button class="nav-btn active" data-page="home">Home</button>
+      <button class="nav-btn" data-page="history">History</button>
+      <button class="nav-btn" data-page="summary">Summary</button>
+      <button class="nav-btn" data-page="export">Export</button>
+    </nav>
+    <main class="main" id="main-swipe">
+      <section id="page-home" class="page active">
+        <div class="card">
+          <h2>Add / Edit Entry</h2>
+          <div class="form-group">
+            <label for="entry-date">Date</label>
+            <input type="date" id="entry-date">
+          </div>
+          <form id="entry-form">
+            <input type="hidden" id="edit-id" value="">
+            <div class="form-group">
+              <label>Milk Type</label>
+              <div class="type-selector">
+                <button type="button" class="type-btn active" data-type="cow">🐄 Cow</button>
+                <button type="button" class="type-btn" data-type="buffalo">🐃 Buffalo</button>
+                <button type="button" class="type-btn" data-type="none">❌ None</button>
+              </div>
+            </div>
+            <div class="form-group" id="quantity-group">
+              <label for="quantity">Quantity</label>
+              <select id="quantity">
+                <option value="">Select quantity</option>
+                <option value="0.25">250 ml</option>
+                <option value="0.5">500 ml</option>
+                <option value="0.75">750 ml</option>
+                <option value="1">1 Liter</option>
+                <option value="1.5">1.5 Liter</option>
+                <option value="2">2 Liter</option>
+                <option value="2.5">2.5 Liter</option>
+                <option value="3">3 Liter</option>
+                <option value="4">4 Liter</option>
+                <option value="5">5 Liter</option>
+              </select>
+            </div>
+            <div class="form-group" id="price-group">
+              <label for="price">Price per Liter (locked)</label>
+              <input type="number" id="price" readonly disabled>
+            </div>
+            <div class="form-group">
+              <label for="notes">Notes (optional)</label>
+              <input type="text" id="notes" placeholder="Any remark...">
+            </div>
+            <div class="total-preview" id="total-preview">Total: ₹ <span id="preview-amount">0</span></div>
+            <button type="submit" class="btn btn-primary" id="save-btn">Save Entry</button>
+            <button type="button" class="btn btn-secondary hidden" id="cancel-edit-btn">Cancel Edit</button>
+          </form>
+        </div>
+        <div class="card">
+          <h3 id="day-entries-title">Entries for selected date</h3>
+          <div id="day-entries" class="day-entries"></div>
+          <div id="day-total" class="day-total hidden"></div>
+        </div>
+      </section>
+      <section id="page-history" class="page">
+        <div class="card">
+          <div class="history-header">
+            <h2>History</h2>
+            <div class="month-nav">
+              <button id="prev-month" class="icon-btn" style="background:#e2e8f0;color:#334155">◀</button>
+              <span id="current-month-label"></span>
+              <button id="next-month" class="icon-btn" style="background:#e2e8f0;color:#334155">▶</button>
+            </div>
+          </div>
+          <div id="history-list" class="history-list"></div>
+        </div>
+      </section>
+      <section id="page-summary" class="page">
+        <div class="card">
+          <h2>Monthly Summary</h2>
+          <div class="month-nav">
+            <button id="sum-prev-month" class="icon-btn" style="background:#e2e8f0;color:#334155">◀</button>
+            <span id="sum-month-label"></span>
+            <button id="sum-next-month" class="icon-btn" style="background:#e2e8f0;color:#334155">▶</button>
+          </div>
+          <div id="monthly-stats" class="stats-grid"></div>
+        </div>
+        <div class="card">
+          <h2>Yearly Summary</h2>
+          <div class="year-nav">
+            <button id="prev-year" class="icon-btn" style="background:#e2e8f0;color:#334155">◀</button>
+            <span id="current-year-label"></span>
+            <button id="next-year" class="icon-btn" style="background:#e2e8f0;color:#334155">▶</button>
+          </div>
+          <div id="yearly-stats" class="stats-grid"></div>
+          <div id="yearly-months" class="yearly-months"></div>
+        </div>
+      </section>
+      <section id="page-export" class="page">
+        <div class="card">
+          <h2>Export Report</h2>
+          <p class="hint">In the print dialog choose <strong>"Save as PDF"</strong>. Each month = 1 page, page numbers on the right.</p>
+          <div class="form-group"><label>Select Month</label><select id="export-month"></select></div>
+          <button class="btn btn-primary" id="export-month-btn">Print / PDF – Selected Month</button>
+          <div class="form-group" style="margin-top:1.5rem"><label>Select Year</label><select id="export-year"></select></div>
+          <button class="btn btn-primary" id="export-year-btn">Print / PDF – Full Year (1 month per page)</button>
+          <hr>
+          <button class="btn btn-secondary" id="export-json-btn">Backup (Download JSON)</button>
+          <button class="btn btn-secondary" id="import-json-btn">Restore (Upload JSON)</button>
+          <input type="file" id="import-file" accept=".json" hidden>
+        </div>
+      </section>
+    </main>
+    <div class="footer-credit">Developed by Ajeet Parmar</div>
+
+    
+    <div id="pwd-modal" class="modal hidden">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>Enter Password</h2>
+          <button id="close-pwd" class="icon-btn" style="background:#e2e8f0;color:#334155">✕</button>
+        </div>
+        <p class="hint">Settings are locked. Enter your password to continue.</p>
+        <div class="form-group">
+          <label for="unlock-password">Password</label>
+          <input type="password" id="unlock-password" placeholder="Password" autocomplete="current-password">
+        </div>
+        <button class="btn btn-primary" id="unlock-btn">Unlock</button>
+      </div>
+    </div>
+
+    <div id="settings-modal" class="modal hidden">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>Settings</h2>
+          <button id="close-settings" class="icon-btn" style="background:#e2e8f0;color:#334155">✕</button>
+        </div>
+        <div class="form-group">
+          <label for="default-cow-price">Default Cow Price (₹/L)</label>
+          <input type="number" id="default-cow-price" step="0.5" min="0">
+        </div>
+        <div class="form-group">
+          <label for="default-buffalo-price">Default Buffalo Price (₹/L)</label>
+          <input type="number" id="default-buffalo-price" step="0.5" min="0">
+        </div>
+        <div class="form-group">
+          <label for="currency">Currency Symbol</label>
+          <input type="text" id="currency" value="₹" maxlength="3">
+        </div>
+        <hr>
+        <h3 style="font-size:1rem;margin-bottom:.75rem;color:var(--primary-dark)">Auto Daily Entry</h3>
+        <p class="hint">When enabled, missing days are filled automatically when you open the app (works offline).</p>
+        <div class="toggle-row">
+          <label for="auto-enable">Enable auto-fill</label>
+          <label class="switch"><input type="checkbox" id="auto-enable"><span class="slider"></span></label>
+        </div>
+        <div class="form-group" id="auto-options">
+          <label for="auto-type">Default type</label>
+          <select id="auto-type">
+            <option value="cow">Cow</option>
+            <option value="buffalo">Buffalo</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="auto-qty">Default quantity</label>
+          <select id="auto-qty">
+            <option value="0.25">250 ml</option>
+            <option value="0.5">500 ml</option>
+            <option value="0.75">750 ml</option>
+            <option value="1" selected>1 Liter</option>
+            <option value="1.5">1.5 Liter</option>
+            <option value="2">2 Liter</option>
+            <option value="2.5">2.5 Liter</option>
+            <option value="3">3 Liter</option>
+          </select>
+        </div>
+        <button class="btn btn-primary" id="save-settings">Save Settings</button>
+        <hr>
+        <h3 style="font-size:1rem;margin-bottom:.75rem;color:var(--primary-dark)">Security Password</h3>
+        <p class="hint" id="pwd-hint">Set a password to lock Settings. Once set, password is required to change anything here.</p>
+        <div class="form-group" id="pwd-set-group">
+          <label for="new-password">Set / Change Password</label>
+          <input type="password" id="new-password" placeholder="Enter new password" autocomplete="new-password">
+        </div>
+        <div class="form-group" id="pwd-confirm-group">
+          <label for="confirm-password">Confirm Password</label>
+          <input type="password" id="confirm-password" placeholder="Confirm password" autocomplete="new-password">
+        </div>
+        <button class="btn btn-secondary" id="set-password-btn">Set Password</button>
+        <button class="btn btn-secondary hidden" id="remove-password-btn">Remove Password</button>
+        <hr>
+        <h3 style="font-size:1rem;margin-bottom:.75rem;color:var(--primary-dark)">Bulk Delete</h3>
+        <p class="hint">Delete all entries for a specific month or an entire year.</p>
+        <div class="form-group">
+          <label for="bulk-year">Year</label>
+          <select id="bulk-year"></select>
+        </div>
+        <div class="form-group">
+          <label for="bulk-month">Month (or All year)</label>
+          <select id="bulk-month">
+            <option value="all">Entire Year</option>
+            <option value="0">January</option>
+            <option value="1">February</option>
+            <option value="2">March</option>
+            <option value="3">April</option>
+            <option value="4">May</option>
+            <option value="5">June</option>
+            <option value="6">July</option>
+            <option value="7">August</option>
+            <option value="8">September</option>
+            <option value="9">October</option>
+            <option value="10">November</option>
+            <option value="11">December</option>
+          </select>
+        </div>
+        <button class="btn btn-danger" id="bulk-delete-btn">Delete Selected</button>
+        <hr>
+        <button class="btn btn-danger" id="clear-data">Clear All Data</button>
+        <p style="text-align:center;margin-top:1.25rem;font-size:.8rem;color:#94a3b8">Milk Tracker · Developed by Ajeet Parmar</p>
+      </div>
+    </div>
+    <div id="toast" class="toast hidden"></div>
+  </div>
+  <div id="print-area" class="print-only"></div>
+
+<script>
+const STORAGE_KEY = 'milk_tracker_data_v3';
+const SETTINGS_KEY = 'milk_tracker_settings_v3';
+const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const PAGES = ['home','history','summary','export'];
+
+let entries = [];
+let settings = {
+  cowPrice: 55, buffaloPrice: 70, currency: '₹',
+  autoEnable: false, autoType: 'cow', autoQty: 1, passwordHash: ''
+};
+let currentType = 'cow';
+let historyMonth = new Date();
+let summaryMonth = new Date();
+let summaryYear = new Date().getFullYear();
+let settingsOpen = false;
+let currentPageIdx = 0;
+
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+function todayStr() {
+  const d = new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function formatDate(dateStr) {
+  const d = new Date(dateStr+'T12:00:00');
+  return DAYS[d.getDay()]+', '+d.getDate()+' '+MONTHS[d.getMonth()]+' '+d.getFullYear();
+}
+function formatMonthLabel(d) { return MONTHS[d.getMonth()]+' '+d.getFullYear(); }
+function loadData() {
+  try { const r = localStorage.getItem(STORAGE_KEY); entries = r ? JSON.parse(r) : []; } catch(e) { entries = []; }
+  try { const s = localStorage.getItem(SETTINGS_KEY); if (s) settings = {...settings, ...JSON.parse(s)}; } catch(e) {}
+}
+function saveData() { localStorage.setItem(STORAGE_KEY, JSON.stringify(entries)); }
+function saveSettings() { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); }
+function showToast(msg, dur=2500) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.remove('hidden');
+  setTimeout(() => t.classList.add('hidden'), dur);
+}
+function calcTotal(qty, price) { return Math.round(qty * price * 100) / 100; }
+function getEntriesForDate(ds) { return entries.filter(e => e.date === ds).sort((a,b) => a.id.localeCompare(b.id)); }
+function getPriceForType(type) { return type === 'buffalo' ? settings.buffaloPrice : settings.cowPrice; }
+
+function switchPage(pageId) {
+  const idx = PAGES.indexOf(pageId);
+  if (idx < 0) return;
+  currentPageIdx = idx;
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-'+pageId).classList.add('active');
+  document.querySelector('.nav-btn[data-page="'+pageId+'"]').classList.add('active');
+  if (pageId === 'history') renderHistory();
+  if (pageId === 'summary') renderSummary();
+  if (pageId === 'export') populateExportSelects();
+}
+
+/* ===== Swipe ===== */
+function initSwipe() {
+  const el = document.getElementById('main-swipe');
+  let startX = 0, startY = 0, tracking = false;
+  el.addEventListener('touchstart', e => {
+    if (e.touches.length !== 1) return;
+    startX = e.touches[0].clientX;
+    startY = e.touches[0].clientY;
+    tracking = true;
+  }, { passive: true });
+  el.addEventListener('touchend', e => {
+    if (!tracking) return;
+    tracking = false;
+    const dx = e.changedTouches[0].clientX - startX;
+    const dy = e.changedTouches[0].clientY - startY;
+    if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+    if (dx < 0 && currentPageIdx < PAGES.length - 1) switchPage(PAGES[currentPageIdx + 1]);
+    else if (dx > 0 && currentPageIdx > 0) switchPage(PAGES[currentPageIdx - 1]);
+  }, { passive: true });
+}
+
+/* ===== Auto-fill missing days ===== */
+function runAutoFill() {
+  if (!settings.autoEnable) return 0;
+  const today = todayStr();
+  const datesWithEntry = new Set(entries.filter(e => e.type !== 'none').map(e => e.date));
+  // Find earliest relevant date: last 60 days or first entry
+  const start = new Date();
+  start.setDate(start.getDate() - 60);
+  let filled = 0;
+  const price = getPriceForType(settings.autoType);
+  const qty = parseFloat(settings.autoQty) || 1;
+  for (let d = new Date(start); d <= new Date(today + 'T12:00:00'); d.setDate(d.getDate() + 1)) {
+    const ds = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+    if (ds > today) break;
+    if (datesWithEntry.has(ds)) continue;
+    // Only fill if there is at least one existing entry before today (user has started using)
+    // or if user already has some data
+    entries.push({
+      id: uid(), date: ds, type: settings.autoType,
+      quantity: qty, pricePerLiter: price, total: calcTotal(qty, price),
+      notes: 'Auto-filled', auto: true
+    });
+    filled++;
+  }
+  if (filled > 0) {
+    entries.sort((a,b) => a.date.localeCompare(b.date) || a.id.localeCompare(b.id));
+    saveData();
+  }
+  return filled;
+}
+
+function initHome() {
+  const dateInput = document.getElementById('entry-date');
+  dateInput.value = todayStr();
+  dateInput.addEventListener('change', () => { clearEditMode(); renderDayEntries(); });
+  document.querySelectorAll('.type-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentType = btn.dataset.type;
+      const isNone = currentType === 'none';
+      document.getElementById('quantity-group').style.display = isNone ? 'none' : 'block';
+      document.getElementById('price-group').style.display = isNone ? 'none' : 'block';
+      document.getElementById('total-preview').style.display = isNone ? 'none' : 'block';
+      if (!isNone) {
+        document.getElementById('price').value = getPriceForType(currentType);
+        updatePreview();
+      }
+    });
+  });
+  document.getElementById('quantity').addEventListener('change', updatePreview);
+  document.getElementById('price').value = settings.cowPrice;
+  document.getElementById('entry-form').addEventListener('submit', saveEntry);
+  document.getElementById('cancel-edit-btn').addEventListener('click', clearEditMode);
+  renderDayEntries();
+}
+function updatePreview() {
+  const qty = parseFloat(document.getElementById('quantity').value) || 0;
+  const price = parseFloat(document.getElementById('price').value) || 0;
+  document.getElementById('preview-amount').textContent = calcTotal(qty, price).toFixed(2);
+}
+function clearEditMode() {
+  document.getElementById('edit-id').value = '';
+  document.getElementById('save-btn').textContent = 'Save Entry';
+  document.getElementById('cancel-edit-btn').classList.add('hidden');
+  document.getElementById('quantity').value = '';
+  document.getElementById('notes').value = '';
+  document.getElementById('price').value = getPriceForType(currentType);
+  updatePreview();
+}
+function saveEntry(e) {
+  e.preventDefault();
+  const date = document.getElementById('entry-date').value || todayStr();
+  const notes = document.getElementById('notes').value.trim();
+  const editId = document.getElementById('edit-id').value;
+  let entry;
+  if (currentType === 'none') {
+    entry = { id: editId || uid(), date, type: 'none', quantity: 0, pricePerLiter: 0, total: 0, notes };
+  } else {
+    const quantity = parseFloat(document.getElementById('quantity').value);
+    const pricePerLiter = getPriceForType(currentType);
+    if (!quantity || quantity <= 0) { showToast('Please select quantity'); return; }
+    entry = { id: editId || uid(), date, type: currentType, quantity, pricePerLiter, total: calcTotal(quantity, pricePerLiter), notes };
+  }
+  if (editId) {
+    const idx = entries.findIndex(x => x.id === editId);
+    if (idx >= 0) entries[idx] = entry;
+  } else entries.push(entry);
+  entries.sort((a,b) => a.date.localeCompare(b.date) || a.id.localeCompare(b.id));
+  saveData();
+  clearEditMode();
+  renderDayEntries();
+  showToast(editId ? 'Entry updated ✓' : 'Entry saved ✓');
+}
+function renderDayEntries() {
+  const date = document.getElementById('entry-date').value || todayStr();
+  const list = getEntriesForDate(date);
+  const el = document.getElementById('day-entries');
+  const totalEl = document.getElementById('day-total');
+  document.getElementById('day-entries-title').textContent = 'Entries for ' + formatDate(date);
+  if (list.length === 0) {
+    el.innerHTML = '<div class="empty-state">No entries for this date</div>';
+    totalEl.classList.add('hidden');
+    return;
+  }
+  let dayTotal = 0;
+  el.innerHTML = list.map(e => {
+    if (e.type === 'none') {
+      return '<div class="entry-item" data-id="'+e.id+'"><div class="left"><div class="type-label">No milk taken</div>'+(e.notes?'<div class="meta">'+e.notes+'</div>':'')+'</div><div class="right"><div class="entry-actions"><button type="button" class="btn btn-sm btn-secondary btn-edit">Edit</button><button type="button" class="btn btn-sm btn-danger btn-del">Delete</button></div></div></div>';
+    }
+    dayTotal += e.total;
+    const typeLabel = e.type === 'cow' ? '🐄 Cow' : '🐃 Buffalo';
+    const qtyLabel = e.quantity < 1 ? (e.quantity*1000)+' ml' : e.quantity + ' L';
+    return '<div class="entry-item" data-id="'+e.id+'"><div class="left"><div class="type-label">'+typeLabel+(e.auto?' (auto)':'')+'</div><div class="meta">'+qtyLabel+' × '+settings.currency+e.pricePerLiter+(e.notes?' · '+e.notes:'')+'</div></div><div class="right"><div class="amount">'+settings.currency+e.total.toFixed(2)+'</div><div class="entry-actions"><button type="button" class="btn btn-sm btn-secondary btn-edit">Edit</button><button type="button" class="btn btn-sm btn-danger btn-del">Delete</button></div></div></div>';
+  }).join('');
+  if (dayTotal > 0) { totalEl.textContent = 'Day Total: ' + settings.currency + dayTotal.toFixed(2); totalEl.classList.remove('hidden'); }
+  else totalEl.classList.add('hidden');
+}
+function startEdit(id) {
+  const e = entries.find(x => x.id === id);
+  if (!e) return;
+  document.getElementById('entry-date').value = e.date;
+  document.getElementById('edit-id').value = e.id;
+  currentType = e.type;
+  document.querySelectorAll('.type-btn').forEach(b => b.classList.toggle('active', b.dataset.type === e.type));
+  const isNone = e.type === 'none';
+  document.getElementById('quantity-group').style.display = isNone ? 'none' : 'block';
+  document.getElementById('price-group').style.display = isNone ? 'none' : 'block';
+  document.getElementById('total-preview').style.display = isNone ? 'none' : 'block';
+  if (!isNone) {
+    document.getElementById('quantity').value = String(e.quantity);
+    document.getElementById('price').value = e.pricePerLiter;
+    updatePreview();
+  }
+  document.getElementById('notes').value = e.notes || '';
+  document.getElementById('save-btn').textContent = 'Update Entry';
+  document.getElementById('cancel-edit-btn').classList.remove('hidden');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  showToast('Editing entry…');
+}
+function deleteEntry(id) {
+  if (!confirm('Delete this entry?')) return;
+  entries = entries.filter(x => x.id !== id);
+  saveData();
+  clearEditMode();
+  renderDayEntries();
+  if (document.getElementById('page-history').classList.contains('active')) renderHistory();
+  showToast('Entry deleted');
+}
+function renderHistory() {
+  document.getElementById('current-month-label').textContent = formatMonthLabel(historyMonth);
+  const year = historyMonth.getFullYear(), month = historyMonth.getMonth();
+  const monthEntries = entries.filter(e => { const d = new Date(e.date+'T12:00:00'); return d.getFullYear()===year && d.getMonth()===month; })
+    .sort((a,b) => b.date.localeCompare(a.date) || b.id.localeCompare(a.id));
+  const list = document.getElementById('history-list');
+  if (!monthEntries.length) { list.innerHTML = '<div class="empty-state">No entries this month</div>'; return; }
+  list.innerHTML = monthEntries.map(e => {
+    if (e.type === 'none') {
+      return '<div class="history-item" data-id="'+e.id+'" style="opacity:.75"><div class="left"><div class="date">'+formatDate(e.date)+'</div><div class="meta">No milk taken</div></div><div class="right"><button type="button" class="btn btn-sm btn-secondary btn-edit">Edit</button> <button type="button" class="btn btn-sm btn-danger btn-del">Del</button></div></div>';
+    }
+    const typeLabel = e.type === 'cow' ? 'Cow' : 'Buffalo';
+    const qtyLabel = e.quantity < 1 ? (e.quantity*1000)+' ml' : e.quantity+' L';
+    return '<div class="history-item" data-id="'+e.id+'"><div class="left"><div class="date">'+formatDate(e.date)+'</div><div class="meta">'+typeLabel+' · '+qtyLabel+' · '+settings.currency+e.pricePerLiter+'/L'+(e.auto?' · auto':'')+'</div></div><div class="right"><div class="amount">'+settings.currency+e.total.toFixed(2)+'</div><div style="margin-top:4px"><button type="button" class="btn btn-sm btn-secondary btn-edit">Edit</button> <button type="button" class="btn btn-sm btn-danger btn-del">Del</button></div></div></div>';
+  }).join('');
+}
+function goEdit(id) {
+  const e = entries.find(x => x.id === id);
+  if (!e) return;
+  switchPage('home');
+  document.getElementById('entry-date').value = e.date;
+  startEdit(id);
+}
+function getMonthStats(year, month) {
+  const monthEntries = entries.filter(e => { const d = new Date(e.date+'T12:00:00'); return d.getFullYear()===year && d.getMonth()===month; });
+  let totalQty=0, totalAmt=0, cowQty=0, buffaloQty=0, daysTaken=new Set(), daysNone=0;
+  monthEntries.forEach(e => {
+    if (e.type==='none') daysNone++;
+    else { daysTaken.add(e.date); totalQty+=e.quantity; totalAmt+=e.total; if (e.type==='cow') cowQty+=e.quantity; else buffaloQty+=e.quantity; }
+  });
+  return { totalQty, totalAmt, cowQty, buffaloQty, daysTaken: daysTaken.size, daysNone, count: monthEntries.length };
+}
+function renderSummary() {
+  document.getElementById('sum-month-label').textContent = formatMonthLabel(summaryMonth);
+  const m = getMonthStats(summaryMonth.getFullYear(), summaryMonth.getMonth());
+  document.getElementById('monthly-stats').innerHTML =
+    '<div class="stat-box"><div class="label">Total Liters</div><div class="value">'+m.totalQty.toFixed(1)+'</div></div>'+
+    '<div class="stat-box"><div class="label">Total Cost</div><div class="value">'+settings.currency+m.totalAmt.toFixed(0)+'</div></div>'+
+    '<div class="stat-box"><div class="label">Cow</div><div class="value">'+m.cowQty.toFixed(1)+' L</div></div>'+
+    '<div class="stat-box"><div class="label">Buffalo</div><div class="value">'+m.buffaloQty.toFixed(1)+' L</div></div>'+
+    '<div class="stat-box"><div class="label">Days with milk</div><div class="value">'+m.daysTaken+'</div></div>'+
+    '<div class="stat-box"><div class="label">None entries</div><div class="value">'+m.daysNone+'</div></div>';
+  document.getElementById('current-year-label').textContent = summaryYear;
+  let yQty=0,yAmt=0,yCow=0,yBuff=0,yDays=0; const rows=[];
+  for (let mo=0; mo<12; mo++) {
+    const s = getMonthStats(summaryYear, mo);
+    yQty+=s.totalQty; yAmt+=s.totalAmt; yCow+=s.cowQty; yBuff+=s.buffaloQty; yDays+=s.daysTaken;
+    if (s.count>0) rows.push('<div class="year-month-row"><span class="name">'+MONTHS[mo]+'</span><span>'+s.totalQty.toFixed(1)+' L · '+settings.currency+s.totalAmt.toFixed(0)+'</span></div>');
+  }
+  document.getElementById('yearly-stats').innerHTML =
+    '<div class="stat-box"><div class="label">Total Liters</div><div class="value">'+yQty.toFixed(1)+'</div></div>'+
+    '<div class="stat-box"><div class="label">Total Cost</div><div class="value">'+settings.currency+yAmt.toFixed(0)+'</div></div>'+
+    '<div class="stat-box"><div class="label">Cow</div><div class="value">'+yCow.toFixed(1)+' L</div></div>'+
+    '<div class="stat-box"><div class="label">Buffalo</div><div class="value">'+yBuff.toFixed(1)+' L</div></div>'+
+    '<div class="stat-box full"><div class="label">Days with milk</div><div class="value">'+yDays+'</div></div>';
+  document.getElementById('yearly-months').innerHTML = rows.length ? rows.join('') : '<div class="empty-state">No data this year</div>';
+}
+function populateExportSelects() {
+  const monthSel = document.getElementById('export-month'), yearSel = document.getElementById('export-year');
+  monthSel.innerHTML = ''; yearSel.innerHTML = '';
+  const monthsSet = new Set(), yearsSet = new Set();
+  const now = new Date();
+  yearsSet.add(now.getFullYear());
+  monthsSet.add(now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0'));
+  entries.forEach(e => {
+    const d = new Date(e.date+'T12:00:00');
+    yearsSet.add(d.getFullYear());
+    monthsSet.add(d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'));
+  });
+  Array.from(monthsSet).sort().reverse().forEach(m => {
+    const [y,mo] = m.split('-');
+    const opt = document.createElement('option'); opt.value = m; opt.textContent = MONTHS[parseInt(mo,10)-1]+' '+y; monthSel.appendChild(opt);
+  });
+  Array.from(yearsSet).sort((a,b)=>b-a).forEach(y => {
+    const opt = document.createElement('option'); opt.value = y; opt.textContent = y; yearSel.appendChild(opt);
+  });
+}
+function buildMonthPageHTML(year, month, pageNum, totalPages) {
+  const stats = getMonthStats(year, month);
+  const monthEntries = entries.filter(e => { const d = new Date(e.date+'T12:00:00'); return d.getFullYear()===year && d.getMonth()===month; })
+    .sort((a,b) => a.date.localeCompare(b.date) || a.id.localeCompare(b.id));
+  let rows = '';
+  monthEntries.forEach(e => {
+    if (e.type==='none') rows += '<tr><td>'+formatDate(e.date)+'</td><td colspan="3">No milk taken</td><td>—</td></tr>';
+    else {
+      const type = e.type==='cow'?'Cow':'Buffalo';
+      rows += '<tr><td>'+formatDate(e.date)+'</td><td>'+type+'</td><td>'+e.quantity+'</td><td>'+e.pricePerLiter+'</td><td>'+e.total.toFixed(2)+'</td></tr>';
+    }
+  });
+  return '<div class="print-page"><div class="print-header"><h1>🥛 Milk Tracker Report</h1><div class="sub">'+MONTHS[month]+' '+year+'</div></div>'+
+    '<div class="print-stats"><div><strong>Total Liters</strong><br>'+stats.totalQty.toFixed(1)+'</div><div><strong>Total Cost</strong><br>'+settings.currency+stats.totalAmt.toFixed(2)+'</div><div><strong>Cow</strong><br>'+stats.cowQty.toFixed(1)+' L</div><div><strong>Buffalo</strong><br>'+stats.buffaloQty.toFixed(1)+' L</div><div><strong>Days</strong><br>'+stats.daysTaken+'</div></div>'+
+    '<table class="print-table"><thead><tr><th>Date</th><th>Type</th><th>Liters</th><th>₹/L</th><th>Total ₹</th></tr></thead><tbody>'+(rows||'<tr><td colspan="5" style="text-align:center;padding:16px">No entries</td></tr>')+'</tbody></table>'+
+    '<div class="print-footer"><div>Developed by Ajeet Parmar</div><div class="page-num">Page '+pageNum+' of '+totalPages+'</div></div></div>';
+}
+function printReport(html) {
+  document.getElementById('print-area').innerHTML = html;
+  setTimeout(() => window.print(), 150);
+}
+
+function simpleHash(str) {
+  let h = 0;
+  for (let i = 0; i < str.length; i++) { h = ((h << 5) - h) + str.charCodeAt(i); h |= 0; }
+  return 'h' + Math.abs(h).toString(36) + str.length;
+}
+function isPasswordSet() { return !!(settings.passwordHash && settings.passwordHash.length > 0); }
+function checkPassword(pw) { return simpleHash(pw) === settings.passwordHash; }
+
+function populateBulkYears() {
+  const sel = document.getElementById('bulk-year');
+  if (!sel) return;
+  sel.innerHTML = '';
+  const years = new Set();
+  const nowY = new Date().getFullYear();
+  years.add(nowY);
+  entries.forEach(e => years.add(new Date(e.date + 'T12:00:00').getFullYear()));
+  Array.from(years).sort((a,b) => b - a).forEach(y => {
+    const o = document.createElement('option');
+    o.value = y; o.textContent = y;
+    sel.appendChild(o);
+  });
+}
+
+function doBulkDelete() {
+  const year = parseInt(document.getElementById('bulk-year').value, 10);
+  const monthVal = document.getElementById('bulk-month').value;
+  let count = 0;
+  if (monthVal === 'all') {
+    if (!confirm('Delete ALL entries for year ' + year + '? This cannot be undone.')) return;
+    const before = entries.length;
+    entries = entries.filter(e => new Date(e.date + 'T12:00:00').getFullYear() !== year);
+    count = before - entries.length;
+  } else {
+    const month = parseInt(monthVal, 10);
+    const mName = MONTHS[month];
+    if (!confirm('Delete all entries for ' + mName + ' ' + year + '? This cannot be undone.')) return;
+    const before = entries.length;
+    entries = entries.filter(e => {
+      const d = new Date(e.date + 'T12:00:00');
+      return !(d.getFullYear() === year && d.getMonth() === month);
+    });
+    count = before - entries.length;
+  }
+  saveData();
+  renderDayEntries();
+  showToast(count + ' entr' + (count === 1 ? 'y' : 'ies') + ' deleted');
+  populateBulkYears();
+}
+
+function openSettings() {
+  if (isPasswordSet()) {
+    document.getElementById('unlock-password').value = '';
+    document.getElementById('pwd-modal').classList.remove('hidden');
+    document.getElementById('unlock-password').focus();
+    return;
+  }
+  showSettingsPanel();
+}
+function showSettingsPanel() {
+  document.getElementById('default-cow-price').value = settings.cowPrice;
+  document.getElementById('default-buffalo-price').value = settings.buffaloPrice;
+  document.getElementById('currency').value = settings.currency;
+  document.getElementById('auto-enable').checked = !!settings.autoEnable;
+  document.getElementById('auto-type').value = settings.autoType || 'cow';
+  document.getElementById('auto-qty').value = String(settings.autoQty || 1);
+  populateBulkYears();
+  // Password UI state
+  const set = isPasswordSet();
+  document.getElementById('pwd-hint').textContent = set
+    ? 'Password is set. Enter a new one below to change it, or remove it.'
+    : 'Set a password to lock Settings. Once set, password is required to change anything here.';
+  document.getElementById('remove-password-btn').classList.toggle('hidden', !set);
+  document.getElementById('new-password').value = '';
+  document.getElementById('confirm-password').value = '';
+  document.getElementById('settings-modal').classList.remove('hidden');
+  settingsOpen = true;
+  history.pushState({ settings: true }, '');
+}
+function closeSettings() {
+  document.getElementById('settings-modal').classList.add('hidden');
+  document.getElementById('pwd-modal').classList.add('hidden');
+  settingsOpen = false;
+}
+window.addEventListener('popstate', () => {
+  if (settingsOpen || !document.getElementById('pwd-modal').classList.contains('hidden')) {
+    closeSettings();
+    history.pushState(null, '');
+  }
+});
+function exportJSON() {
+  const data = { version: 3, settings, entries, exportedAt: new Date().toISOString(), app: 'Milk Tracker by Ajeet Parmar' };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = 'milk-tracker-backup-'+todayStr()+'.json'; a.click();
+  showToast('Backup downloaded');
+}
+function importJSON(file) {
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const data = JSON.parse(ev.target.result);
+      if (data.entries && Array.isArray(data.entries)) {
+        if (confirm('Import '+data.entries.length+' entries? Existing data will be replaced.')) {
+          entries = data.entries;
+          if (data.settings) settings = {...settings, ...data.settings};
+          saveData(); saveSettings(); renderDayEntries(); showToast('Data restored ✓');
+        }
+      } else showToast('Invalid file');
+    } catch(err) { showToast('Error reading file'); }
+  };
+  reader.readAsText(file);
+}
+function init() {
+  loadData();
+  const filled = runAutoFill();
+  initHome();
+  initSwipe();
+  if (filled > 0) showToast('Auto-filled '+filled+' missing day(s)');
+  document.querySelectorAll('.nav-btn').forEach(btn => btn.addEventListener('click', () => switchPage(btn.dataset.page)));
+  document.getElementById('prev-month').addEventListener('click', () => { historyMonth.setMonth(historyMonth.getMonth()-1); renderHistory(); });
+  document.getElementById('next-month').addEventListener('click', () => { historyMonth.setMonth(historyMonth.getMonth()+1); renderHistory(); });
+  document.getElementById('sum-prev-month').addEventListener('click', () => { summaryMonth.setMonth(summaryMonth.getMonth()-1); renderSummary(); });
+  document.getElementById('sum-next-month').addEventListener('click', () => { summaryMonth.setMonth(summaryMonth.getMonth()+1); renderSummary(); });
+  document.getElementById('prev-year').addEventListener('click', () => { summaryYear--; renderSummary(); });
+  document.getElementById('next-year').addEventListener('click', () => { summaryYear++; renderSummary(); });
+  document.getElementById('settings-btn').addEventListener('click', openSettings);
+  document.getElementById('close-settings').addEventListener('click', () => { closeSettings(); if (history.state&&history.state.settings) history.back(); });
+  document.getElementById('close-pwd').addEventListener('click', () => {
+    document.getElementById('pwd-modal').classList.add('hidden');
+  });
+  document.getElementById('unlock-btn').addEventListener('click', () => {
+    const pw = document.getElementById('unlock-password').value;
+    if (checkPassword(pw)) {
+      document.getElementById('pwd-modal').classList.add('hidden');
+      showSettingsPanel();
+    } else {
+      showToast('Wrong password');
+      document.getElementById('unlock-password').value = '';
+    }
+  });
+  document.getElementById('unlock-password').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') document.getElementById('unlock-btn').click();
+  });
+  document.getElementById('set-password-btn').addEventListener('click', () => {
+    const a = document.getElementById('new-password').value;
+    const b = document.getElementById('confirm-password').value;
+    if (!a || a.length < 4) { showToast('Password must be at least 4 characters'); return; }
+    if (a !== b) { showToast('Passwords do not match'); return; }
+    settings.passwordHash = simpleHash(a);
+    saveSettings();
+    document.getElementById('new-password').value = '';
+    document.getElementById('confirm-password').value = '';
+    document.getElementById('remove-password-btn').classList.remove('hidden');
+    document.getElementById('pwd-hint').textContent = 'Password is set. Enter a new one below to change it, or remove it.';
+    showToast('Password set ✓');
+  });
+  document.getElementById('remove-password-btn').addEventListener('click', () => {
+    if (!confirm('Remove password lock from Settings?')) return;
+    settings.passwordHash = '';
+    saveSettings();
+    document.getElementById('remove-password-btn').classList.add('hidden');
+    document.getElementById('pwd-hint').textContent = 'Set a password to lock Settings. Once set, password is required to change anything here.';
+    showToast('Password removed');
+  });
+  document.getElementById('bulk-delete-btn').addEventListener('click', doBulkDelete);
+  document.getElementById('save-settings').addEventListener('click', () => {
+    settings.cowPrice = parseFloat(document.getElementById('default-cow-price').value) || 55;
+    settings.buffaloPrice = parseFloat(document.getElementById('default-buffalo-price').value) || 70;
+    settings.currency = document.getElementById('currency').value || '₹';
+    settings.autoEnable = document.getElementById('auto-enable').checked;
+    settings.autoType = document.getElementById('auto-type').value;
+    settings.autoQty = parseFloat(document.getElementById('auto-qty').value) || 1;
+    saveSettings();
+    closeSettings();
+    if (history.state && history.state.settings) history.back();
+    document.getElementById('price').value = getPriceForType(currentType);
+    showToast('Settings saved');
+    const f = runAutoFill();
+    if (f > 0) { renderDayEntries(); showToast('Auto-filled '+f+' day(s)'); }
+  });
+  document.getElementById('clear-data').addEventListener('click', () => {
+    if (confirm('Delete ALL data permanently?')) {
+      entries = []; saveData(); renderDayEntries(); closeSettings(); showToast('All data cleared');
+    }
+  });
+  document.getElementById('export-month-btn').addEventListener('click', () => {
+    const val = document.getElementById('export-month').value; if (!val) return;
+    const [y,m] = val.split('-').map(Number);
+    printReport(buildMonthPageHTML(y, m-1, 1, 1));
+  });
+  document.getElementById('export-year-btn').addEventListener('click', () => {
+    const y = parseInt(document.getElementById('export-year').value, 10);
+    const pages = [];
+    for (let m=0; m<12; m++) { if (getMonthStats(y,m).count > 0) pages.push({year:y,month:m}); }
+    if (!pages.length) for (let m=0; m<12; m++) pages.push({year:y,month:m});
+    printReport(pages.map((p,i) => buildMonthPageHTML(p.year, p.month, i+1, pages.length)).join(''));
+  });
+  document.getElementById('export-json-btn').addEventListener('click', exportJSON);
+  document.getElementById('import-json-btn').addEventListener('click', () => document.getElementById('import-file').click());
+  document.getElementById('import-file').addEventListener('change', e => { if (e.target.files[0]) importJSON(e.target.files[0]); e.target.value=''; });
+  document.getElementById('day-entries').addEventListener('click', ev => {
+    const item = ev.target.closest('[data-id]'); if (!item) return;
+    const id = item.getAttribute('data-id');
+    if (ev.target.classList.contains('btn-edit')) startEdit(id);
+    if (ev.target.classList.contains('btn-del')) deleteEntry(id);
+  });
+  document.getElementById('history-list').addEventListener('click', ev => {
+    const item = ev.target.closest('[data-id]'); if (!item) return;
+    const id = item.getAttribute('data-id');
+    if (ev.target.classList.contains('btn-edit')) goEdit(id);
+    if (ev.target.classList.contains('btn-del')) deleteEntry(id);
+  });
+  history.pushState(null, '');
+  if ('serviceWorker' in navigator) {
+    
+  }
+}
+document.addEventListener('DOMContentLoaded', init);
+window.startEdit = startEdit;
+window.deleteEntry = deleteEntry;
+window.goEdit = goEdit;
+</script>
+</body>
+</html>
