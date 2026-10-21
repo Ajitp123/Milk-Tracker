@@ -208,6 +208,8 @@ hr { border: none; border-top: 1px solid var(--border); margin: 1.5rem 0; }
             <button id="sum-next-month" class="icon-btn" style="background:#e2e8f0;color:#334155">▶</button>
           </div>
           <div id="monthly-stats" class="stats-grid"></div>
+          <button type="button" class="btn btn-primary hidden" id="pay-month-btn" style="margin-top:1rem">Pay with UPI / Google Pay</button>
+          <p class="hint hidden" id="pay-month-hint" style="margin-top:0.5rem;text-align:center"></p>
         </div>
         <div class="card">
           <h2>Yearly Summary</h2>
@@ -270,6 +272,17 @@ hr { border: none; border-top: 1px solid var(--border); margin: 1.5rem 0; }
         <div class="form-group">
           <label for="currency">Currency Symbol</label>
           <input type="text" id="currency" value="₹" maxlength="3">
+        </div>
+        <hr>
+        <h3 style="font-size:1rem;margin-bottom:.75rem;color:var(--primary-dark)">UPI Payment</h3>
+        <p class="hint">Save milk vendor UPI ID. You can pay monthly total via Google Pay / PhonePe / any UPI app.</p>
+        <div class="form-group">
+          <label for="upi-id">Vendor UPI ID</label>
+          <input type="text" id="upi-id" placeholder="e.g. name@oksbi or 9876543210@paytm" autocomplete="off">
+        </div>
+        <div class="form-group">
+          <label for="upi-name">Vendor name (optional)</label>
+          <input type="text" id="upi-name" placeholder="e.g. Ramesh Milk" autocomplete="off">
         </div>
         <hr>
         <h3 style="font-size:1rem;margin-bottom:.75rem;color:var(--primary-dark)">Auto Daily Entry</h3>
@@ -362,7 +375,7 @@ const PAGES = ['home','history','summary','export'];
 let entries = [];
 let settings = {
   cowPrice: 55, buffaloPrice: 70, currency: '₹',
-  autoEnable: false, autoType: 'cow', autoQty: 1, autoStartDate: '', passwordHash: ''
+  autoEnable: false, autoType: 'cow', autoQty: 1, autoStartDate: '', passwordHash: '', upiId: '', upiName: 'Milk Vendor'
 };
 let currentType = 'cow';
 let historyMonth = new Date();
@@ -622,6 +635,28 @@ function goEdit(id) {
   document.getElementById('entry-date').value = e.date;
   startEdit(id);
 }
+
+function payUPI(amount, note) {
+  const upi = (settings.upiId || '').trim();
+  if (!upi) {
+    showToast('Set Vendor UPI ID in Settings first');
+    openSettings();
+    return;
+  }
+  if (!amount || amount <= 0) {
+    showToast('No amount to pay for this month');
+    return;
+  }
+  const am = Number(amount).toFixed(2);
+  const pn = encodeURIComponent(settings.upiName || 'Milk Vendor');
+  const tn = encodeURIComponent(note || 'Milk payment');
+  const pa = encodeURIComponent(upi);
+  // Standard UPI intent — opens GPay / PhonePe / any UPI app
+  const url = 'upi://pay?pa=' + pa + '&pn=' + pn + '&am=' + am + '&cu=INR&tn=' + tn;
+  showToast('Opening UPI app… ₹' + am);
+  window.location.href = url;
+}
+
 function getMonthStats(year, month) {
   const monthEntries = entries.filter(e => { const d = new Date(e.date+'T12:00:00'); return d.getFullYear()===year && d.getMonth()===month; });
   let totalQty=0, totalAmt=0, cowQty=0, buffaloQty=0, daysTaken=new Set(), daysNone=0;
@@ -641,6 +676,27 @@ function renderSummary() {
     '<div class="stat-box"><div class="label">Buffalo</div><div class="value">'+m.buffaloQty.toFixed(1)+' L</div></div>'+
     '<div class="stat-box"><div class="label">Days with milk</div><div class="value">'+m.daysTaken+'</div></div>'+
     '<div class="stat-box"><div class="label">None entries</div><div class="value">'+m.daysNone+'</div></div>';
+  const payBtn = document.getElementById('pay-month-btn');
+  const payHint = document.getElementById('pay-month-hint');
+  if (payBtn) {
+    if (m.totalAmt > 0) {
+      payBtn.classList.remove('hidden');
+      payBtn.textContent = 'Pay ' + settings.currency + m.totalAmt.toFixed(0) + ' with UPI / Google Pay';
+      payBtn.onclick = function() {
+        const label = formatMonthLabel(summaryMonth);
+        payUPI(m.totalAmt, 'Milk - ' + label);
+      };
+      if (payHint) {
+        payHint.classList.remove('hidden');
+        payHint.textContent = settings.upiId
+          ? ('Pays to: ' + (settings.upiName || '') + ' (' + settings.upiId + ')')
+          : 'Set Vendor UPI ID in Settings first';
+      }
+    } else {
+      payBtn.classList.add('hidden');
+      if (payHint) payHint.classList.add('hidden');
+    }
+  }
   document.getElementById('current-year-label').textContent = summaryYear;
   let yQty=0,yAmt=0,yCow=0,yBuff=0,yDays=0; const rows=[];
   for (let mo=0; mo<12; mo++) {
@@ -760,6 +816,8 @@ function showSettingsPanel() {
   document.getElementById('default-cow-price').value = settings.cowPrice;
   document.getElementById('default-buffalo-price').value = settings.buffaloPrice;
   document.getElementById('currency').value = settings.currency;
+  document.getElementById('upi-id').value = settings.upiId || '';
+  document.getElementById('upi-name').value = settings.upiName || 'Milk Vendor';
   document.getElementById('auto-enable').checked = !!settings.autoEnable;
   document.getElementById('auto-type').value = settings.autoType || 'cow';
   document.getElementById('auto-qty').value = String(settings.autoQty || 1);
@@ -788,6 +846,7 @@ window.addEventListener('popstate', () => {
     history.pushState(null, '');
   }
 });
+
 function exportJSON() {
   const data = { version: 3, settings, entries, exportedAt: new Date().toISOString(), app: 'Milk Tracker by Ajeet Parmar' };
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -868,6 +927,8 @@ function init() {
     settings.cowPrice = parseFloat(document.getElementById('default-cow-price').value) || 55;
     settings.buffaloPrice = parseFloat(document.getElementById('default-buffalo-price').value) || 70;
     settings.currency = document.getElementById('currency').value || '₹';
+    settings.upiId = (document.getElementById('upi-id').value || '').trim();
+    settings.upiName = (document.getElementById('upi-name').value || 'Milk Vendor').trim();
     settings.autoEnable = document.getElementById('auto-enable').checked;
     settings.autoType = document.getElementById('auto-type').value;
     settings.autoQty = parseFloat(document.getElementById('auto-qty').value) || 1;
