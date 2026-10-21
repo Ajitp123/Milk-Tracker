@@ -298,6 +298,11 @@ hr { border: none; border-top: 1px solid var(--border); margin: 1.5rem 0; }
             <option value="3">3 Liter</option>
           </select>
         </div>
+        <div class="form-group">
+          <label for="auto-start-date">Auto-fill from this date</label>
+          <input type="date" id="auto-start-date">
+          <p class="hint" style="margin-top:0.4rem;margin-bottom:0">Only missing days from this date until today will be filled. Already saved days are never changed.</p>
+        </div>
         <button class="btn btn-primary" id="save-settings">Save Settings</button>
         <hr>
         <h3 style="font-size:1rem;margin-bottom:.75rem;color:var(--primary-dark)">Security Password</h3>
@@ -357,7 +362,7 @@ const PAGES = ['home','history','summary','export'];
 let entries = [];
 let settings = {
   cowPrice: 55, buffaloPrice: 70, currency: '₹',
-  autoEnable: false, autoType: 'cow', autoQty: 1, passwordHash: ''
+  autoEnable: false, autoType: 'cow', autoQty: 1, autoStartDate: '', passwordHash: ''
 };
 let currentType = 'cow';
 let historyMonth = new Date();
@@ -429,23 +434,33 @@ function initSwipe() {
 function runAutoFill() {
   if (!settings.autoEnable) return 0;
   const today = todayStr();
-  const datesWithEntry = new Set(entries.filter(e => e.type !== 'none').map(e => e.date));
-  // Find earliest relevant date: last 60 days or first entry
-  const start = new Date();
-  start.setDate(start.getDate() - 60);
-  let filled = 0;
+  // Start date: user-chosen, or today if not set (fill nothing in the past until they set it)
+  let startStr = settings.autoStartDate || today;
+  if (startStr > today) startStr = today;
+
+  // ANY entry on a date (including "none") means that day is already handled — never touch it
+  const datesWithEntry = new Set(entries.map(e => e.date));
+
   const price = getPriceForType(settings.autoType);
   const qty = parseFloat(settings.autoQty) || 1;
-  for (let d = new Date(start); d <= new Date(today + 'T12:00:00'); d.setDate(d.getDate() + 1)) {
-    const ds = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  let filled = 0;
+
+  const start = new Date(startStr + 'T12:00:00');
+  const end = new Date(today + 'T12:00:00');
+
+  for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+    const ds = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
     if (ds > today) break;
-    if (datesWithEntry.has(ds)) continue;
-    // Only fill if there is at least one existing entry before today (user has started using)
-    // or if user already has some data
+    if (datesWithEntry.has(ds)) continue; // already has entry — skip forever
     entries.push({
-      id: uid(), date: ds, type: settings.autoType,
-      quantity: qty, pricePerLiter: price, total: calcTotal(qty, price),
-      notes: 'Auto-filled', auto: true
+      id: uid(),
+      date: ds,
+      type: settings.autoType,
+      quantity: qty,
+      pricePerLiter: price,
+      total: calcTotal(qty, price),
+      notes: 'Auto-filled',
+      auto: true
     });
     filled++;
   }
@@ -512,7 +527,17 @@ function saveEntry(e) {
   if (editId) {
     const idx = entries.findIndex(x => x.id === editId);
     if (idx >= 0) entries[idx] = entry;
-  } else entries.push(entry);
+    else entries.push(entry);
+  } else {
+    // Prevent exact duplicate: same date + same type (replace old one instead)
+    const dupIdx = entries.findIndex(x => x.date === date && x.type === entry.type);
+    if (dupIdx >= 0) {
+      entry.id = entries[dupIdx].id;
+      entries[dupIdx] = entry;
+    } else {
+      entries.push(entry);
+    }
+  }
   entries.sort((a,b) => a.date.localeCompare(b.date) || a.id.localeCompare(b.id));
   saveData();
   clearEditMode();
@@ -738,6 +763,7 @@ function showSettingsPanel() {
   document.getElementById('auto-enable').checked = !!settings.autoEnable;
   document.getElementById('auto-type').value = settings.autoType || 'cow';
   document.getElementById('auto-qty').value = String(settings.autoQty || 1);
+  document.getElementById('auto-start-date').value = settings.autoStartDate || todayStr();
   populateBulkYears();
   // Password UI state
   const set = isPasswordSet();
@@ -845,6 +871,7 @@ function init() {
     settings.autoEnable = document.getElementById('auto-enable').checked;
     settings.autoType = document.getElementById('auto-type').value;
     settings.autoQty = parseFloat(document.getElementById('auto-qty').value) || 1;
+    settings.autoStartDate = document.getElementById('auto-start-date').value || todayStr();
     saveSettings();
     closeSettings();
     if (history.state && history.state.settings) history.back();
